@@ -1,0 +1,15 @@
+[Unit]
+Description=fernhttp: Apache log tailer + real-time dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+ExecStart=/usr/local/bin/fernhttp --log /var/log/apache2/access.log --db /var/lib/fernhttp/logs.db --host 127.0.0.1 --port 7890
+Restart=on-failure
+RestartSec=2
+# logs.dir must be writable by the service user for the SQLite WAL files
+# DirectoryCreateMode=0755
+
+[Install]
+WantedBy=multi-user.target

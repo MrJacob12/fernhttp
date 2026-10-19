@@ -1,0 +1,42 @@
+services:
+  fernhttp:
+    build:
+      context: .
+      # One image, three main targets: the Dockerfile's TARGETARCH mapping
+      # decides the rust musl target per platform.
+      # - linux/arm64: ARMv8 64-bit — Raspberry Pi 4/5 (64-bit OS), M-series
+      #   Macs, AWS Graviton
+      # - linux/arm/v7: 32-bit ARMv7 — Raspberry Pi 2/3, 32-bit OS on Pi 4
+      # - linux/amd64: x86_64 — desktops, most VPS
+      platforms:
+        - linux/amd64
+        - linux/arm64
+        - linux/arm/v7
+    image: fernhttp:latest
+    container_name: fernhttp
+    restart: unless-stopped
+    init: true
+    ports:
+      - "7890:7890"
+    environment:
+      # Comma-separated path list: tail several Apache vhosts at once.
+      # Alternatively set LOGS_DIR (below) to load every *access.log in a
+      # directory — each file becomes a dashboard tab.
+      LOG_PATH: /logs/access.log
+      # LOGS_DIR: /logs   # all vhosts, per-host tabs
+      DB_PATH: /data/fernhttp.db
+      HOST: 0.0.0.0
+      PORT: 7890
+      POLL_MS: 500
+    volumes:
+      # Apache/nginx logs — read-only from the host
+      - ./logs:/logs:ro
+      # SQLite history — writable on the host
+      - ./data:/data
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7890/api/stats >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
